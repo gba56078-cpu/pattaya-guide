@@ -182,10 +182,42 @@
     .card-subtitle { font-size: 0.85rem; color: var(--text-light); margin-top: 4px; }
     .card-body { padding: 20px 24px; flex: 1; }
     .card-footer {
-      padding: 16px 24px;
+      padding: 20px 24px;
       background: #f8fafc;
       border-top: 1px solid var(--border);
-      display: flex; justify-content: space-between; align-items: center;
+      display: flex; flex-direction: column; gap: 16px;
+    }
+    .footer-price {
+      font-weight: 700;
+      color: var(--accent);
+      font-size: 1.1rem;
+    }
+    .footer-actions {
+      display: flex; gap: 12px; align-items: center;
+    }
+    .footer-actions .btn-link {
+      flex: 1;
+    }
+    .vote-section {
+      display: flex; gap: 12px; align-items: center; padding-top: 12px; border-top: 1px solid var(--border);
+    }
+    .vote-section .vote-btn {
+      flex-shrink: 0;
+    }
+    .vote-stats {
+      display: flex; gap: 12px; align-items: center; flex: 1;
+    }
+    .vote-count {
+      font-weight: 700;
+      color: var(--accent);
+      font-size: 1rem;
+      min-width: 60px;
+      text-align: center;
+    }
+    .vote-status {
+      font-size: 0.8rem;
+      color: var(--text-light);
+      margin-left: auto;
     }
 
     /* ── TAGS ── */
@@ -475,12 +507,16 @@
             </div>
           </div>
           <div class="card-footer">
-            <div style="font-weight:700; color:var(--accent);">約 NT$31,524 <small>/3晚</small></div>
-            <a href="https://www.airbnb.com.tw/rooms/1349239359065687878" target="_blank" class="btn-link">查看房源 →</a>
-            <div class="vote-container">
+            <div class="footer-price">約 NT$31,524 <small>/3晚</small></div>
+            <div class="footer-actions">
+              <a href="https://www.airbnb.com.tw/rooms/1349239359065687878" target="_blank" class="btn-link">查看房源 →</a>
+            </div>
+            <div class="vote-section">
               <button class="vote-btn" onclick="voteAccommodation('airbnb-1')" id="vote-airbnb-1">👍 投票</button>
-              <span class="vote-count" id="count-airbnb-1">0 票</span>
-              <span class="vote-status" id="status-airbnb-1"></span>
+              <div class="vote-stats">
+                <span class="vote-count" id="count-airbnb-1">0 票</span>
+                <span class="vote-status" id="status-airbnb-1"></span>
+              </div>
             </div>
           </div>
         </div>
@@ -497,12 +533,16 @@
             </div>
           </div>
           <div class="card-footer">
-            <div style="font-weight:700; color:var(--accent);">約 NT$68,050 <small>/3晚</small></div>
-            <a href="https://www.airbnb.com.tw/rooms/1338763244250097181" target="_blank" class="btn-link">查看房源 →</a>
-            <div class="vote-container">
+            <div class="footer-price">約 NT$68,050 <small>/3晚</small></div>
+            <div class="footer-actions">
+              <a href="https://www.airbnb.com.tw/rooms/1338763244250097181" target="_blank" class="btn-link">查看房源 →</a>
+            </div>
+            <div class="vote-section">
               <button class="vote-btn" onclick="voteAccommodation('airbnb-2')" id="vote-airbnb-2">👍 投票</button>
-              <span class="vote-count" id="count-airbnb-2">0 票</span>
-              <span class="vote-status" id="status-airbnb-2"></span>
+              <div class="vote-stats">
+                <span class="vote-count" id="count-airbnb-2">0 票</span>
+                <span class="vote-status" id="status-airbnb-2"></span>
+              </div>
             </div>
           </div>
         </div>
@@ -519,12 +559,16 @@
             </div>
           </div>
           <div class="card-footer">
-            <div style="font-weight:700; color:var(--accent);">約 NT$42,713 <small>/3晚</small></div>
-            <a href="https://www.airbnb.com.tw/rooms/1410719493045136394" target="_blank" class="btn-link">查看房源 →</a>
-            <div class="vote-container">
+            <div class="footer-price">約 NT$42,713 <small>/3晚</small></div>
+            <div class="footer-actions">
+              <a href="https://www.airbnb.com.tw/rooms/1410719493045136394" target="_blank" class="btn-link">查看房源 →</a>
+            </div>
+            <div class="vote-section">
               <button class="vote-btn" onclick="voteAccommodation('airbnb-3')" id="vote-airbnb-3">👍 投票</button>
-              <span class="vote-count" id="count-airbnb-3">0 票</span>
-              <span class="vote-status" id="status-airbnb-3"></span>
+              <div class="vote-stats">
+                <span class="vote-count" id="count-airbnb-3">0 票</span>
+                <span class="vote-status" id="status-airbnb-3"></span>
+              </div>
             </div>
           </div>
         </div>
@@ -546,12 +590,16 @@
             </div>
           </div>
           <div class="card-footer">
-            <div style="font-weight:700; color:var(--accent);">頂級奢華選擇</div>
-            <a href="https://capedarapattaya.com/zh-hans/" target="_blank" class="btn-link">官方網站 →</a>
-            <div class="vote-container">
+            <div class="footer-price">頂級奢華選擇</div>
+            <div class="footer-actions">
+              <a href="https://capedarapattaya.com/zh-hans/" target="_blank" class="btn-link">官方網站 →</a>
+            </div>
+            <div class="vote-section">
               <button class="vote-btn" onclick="voteAccommodation('resort-1')" id="vote-resort-1">👍 投票</button>
-              <span class="vote-count" id="count-resort-1">0 票</span>
-              <span class="vote-status" id="status-resort-1"></span>
+              <div class="vote-stats">
+                <span class="vote-count" id="count-resort-1">0 票</span>
+                <span class="vote-status" id="status-resort-1"></span>
+              </div>
             </div>
           </div>
         </div>
@@ -568,12 +616,16 @@
             </div>
           </div>
           <div class="card-footer">
-            <div style="font-weight:700; color:var(--accent);">歡樂度假首選</div>
-            <a href="https://www.centarahotelsresorts.com/centaragrand/cn/cmbr" target="_blank" class="btn-link">官方網站 →</a>
-            <div class="vote-container">
+            <div class="footer-price">歡樂度假首選</div>
+            <div class="footer-actions">
+              <a href="https://www.centarahotelsresorts.com/centaragrand/cn/cmbr" target="_blank" class="btn-link">官方網站 →</a>
+            </div>
+            <div class="vote-section">
               <button class="vote-btn" onclick="voteAccommodation('resort-2')" id="vote-resort-2">👍 投票</button>
-              <span class="vote-count" id="count-resort-2">0 票</span>
-              <span class="vote-status" id="status-resort-2"></span>
+              <div class="vote-stats">
+                <span class="vote-count" id="count-resort-2">0 票</span>
+                <span class="vote-status" id="status-resort-2"></span>
+              </div>
             </div>
           </div>
         </div>
@@ -590,12 +642,16 @@
             </div>
           </div>
           <div class="card-footer">
-            <div style="font-weight:700; color:var(--accent);">約 NT$48,000 <small>/3晚8人</small></div>
-            <a href="https://www.booking.com/hotel/th/x2-pattaya-oceanphere-residence.zh-tw.html" target="_blank" class="btn-link">查看詳情 →</a>
-            <div class="vote-container">
+            <div class="footer-price">約 NT$48,000 <small>/3晚8人</small></div>
+            <div class="footer-actions">
+              <a href="https://www.booking.com/hotel/th/x2-pattaya-oceanphere-residence.zh-tw.html" target="_blank" class="btn-link">查看詳情 →</a>
+            </div>
+            <div class="vote-section">
               <button class="vote-btn" onclick="voteAccommodation('resort-3')" id="vote-resort-3">👍 投票</button>
-              <span class="vote-count" id="count-resort-3">0 票</span>
-              <span class="vote-status" id="status-resort-3"></span>
+              <div class="vote-stats">
+                <span class="vote-count" id="count-resort-3">0 票</span>
+                <span class="vote-status" id="status-resort-3"></span>
+              </div>
             </div>
           </div>
         </div>
