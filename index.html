@@ -263,6 +263,49 @@
       margin-bottom: 32px;
       font-size: 0.95rem;
     }
+
+    /* ── VOTING SYSTEM ── */
+    .vote-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+    .vote-btn {
+      padding: 8px 16px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    .vote-btn:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+    }
+    .vote-btn.voted {
+      background: var(--teal);
+    }
+    .vote-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+    .vote-count {
+      font-weight: 700;
+      color: var(--accent);
+      font-size: 0.95rem;
+    }
+    .vote-status {
+      font-size: 0.8rem;
+      color: var(--text-light);
+      margin-left: auto;
+    }
   </style>
 </head>
 <body>
@@ -422,6 +465,11 @@
           <div class="card-footer">
             <div style="font-weight:700; color:var(--accent);">約 NT$31,524 <small>/3晚</small></div>
             <a href="https://www.airbnb.com.tw/rooms/1349239359065687878" target="_blank" class="btn-link">查看房源 →</a>
+            <div class="vote-container">
+              <button class="vote-btn" onclick="voteAccommodation('airbnb-1')" id="vote-airbnb-1">👍 投票</button>
+              <span class="vote-count" id="count-airbnb-1">0 票</span>
+              <span class="vote-status" id="status-airbnb-1"></span>
+            </div>
           </div>
         </div>
 
@@ -439,6 +487,11 @@
           <div class="card-footer">
             <div style="font-weight:700; color:var(--accent);">約 NT$68,050 <small>/3晚</small></div>
             <a href="https://www.airbnb.com.tw/rooms/1338763244250097181" target="_blank" class="btn-link">查看房源 →</a>
+            <div class="vote-container">
+              <button class="vote-btn" onclick="voteAccommodation('airbnb-2')" id="vote-airbnb-2">👍 投票</button>
+              <span class="vote-count" id="count-airbnb-2">0 票</span>
+              <span class="vote-status" id="status-airbnb-2"></span>
+            </div>
           </div>
         </div>
 
@@ -456,6 +509,11 @@
           <div class="card-footer">
             <div style="font-weight:700; color:var(--accent);">約 NT$42,713 <small>/3晚</small></div>
             <a href="https://www.airbnb.com.tw/rooms/1410719493045136394" target="_blank" class="btn-link">查看房源 →</a>
+            <div class="vote-container">
+              <button class="vote-btn" onclick="voteAccommodation('airbnb-3')" id="vote-airbnb-3">👍 投票</button>
+              <span class="vote-count" id="count-airbnb-3">0 票</span>
+              <span class="vote-status" id="status-airbnb-3"></span>
+            </div>
           </div>
         </div>
       </div>
@@ -478,6 +536,11 @@
           <div class="card-footer">
             <div style="font-weight:700; color:var(--accent);">頂級奢華選擇</div>
             <a href="https://capedarapattaya.com/zh-hans/" target="_blank" class="btn-link">官方網站 →</a>
+            <div class="vote-container">
+              <button class="vote-btn" onclick="voteAccommodation('resort-1')" id="vote-resort-1">👍 投票</button>
+              <span class="vote-count" id="count-resort-1">0 票</span>
+              <span class="vote-status" id="status-resort-1"></span>
+            </div>
           </div>
         </div>
 
@@ -495,6 +558,11 @@
           <div class="card-footer">
             <div style="font-weight:700; color:var(--accent);">歡樂度假首選</div>
             <a href="https://www.centarahotelsresorts.com/centaragrand/cn/cmbr" target="_blank" class="btn-link">官方網站 →</a>
+            <div class="vote-container">
+              <button class="vote-btn" onclick="voteAccommodation('resort-2')" id="vote-resort-2">👍 投票</button>
+              <span class="vote-count" id="count-resort-2">0 票</span>
+              <span class="vote-status" id="status-resort-2"></span>
+            </div>
           </div>
         </div>
 
@@ -512,6 +580,11 @@
           <div class="card-footer">
             <div style="font-weight:700; color:var(--accent);">約 NT$48,000 <small>/3晚8人</small></div>
             <a href="https://www.booking.com/hotel/th/x2-pattaya-oceanphere-residence.zh-tw.html" target="_blank" class="btn-link">查看詳情 →</a>
+            <div class="vote-container">
+              <button class="vote-btn" onclick="voteAccommodation('resort-3')" id="vote-resort-3">👍 投票</button>
+              <span class="vote-count" id="count-resort-3">0 票</span>
+              <span class="vote-status" id="status-resort-3"></span>
+            </div>
           </div>
         </div>
       </div>
@@ -898,6 +971,84 @@ function initMap(id, data, color) {
 initMap('area-map', areas);
 initMap('accom-map', accoms);
 initMap('beach-map', beaches);
+
+// ── VOTING SYSTEM ──
+const VOTE_LIMIT = 2;
+const ACCOMMODATION_OPTIONS = ['airbnb-1', 'airbnb-2', 'airbnb-3', 'resort-1', 'resort-2', 'resort-3'];
+
+function loadVotes() {
+  const votes = JSON.parse(localStorage.getItem('pattaya_votes')) || {};
+  const userVotes = JSON.parse(localStorage.getItem('pattaya_user_votes')) || [];
+  
+  // 更新每個選項的投票數
+  ACCOMMODATION_OPTIONS.forEach(option => {
+    const count = votes[option] || 0;
+    document.getElementById(`count-${option}`).textContent = `${count} 票`;
+    
+    // 棄置按鈕是否已投票
+    const btn = document.getElementById(`vote-${option}`);
+    if (userVotes.includes(option)) {
+      btn.classList.add('voted');
+      btn.textContent = '✓ 已投票';
+    }
+  });
+  
+  // 更新投票數量提示
+  updateVoteStatus(userVotes);
+}
+
+function updateVoteStatus(userVotes) {
+  const remaining = VOTE_LIMIT - userVotes.length;
+  ACCOMMODATION_OPTIONS.forEach(option => {
+    const status = document.getElementById(`status-${option}`);
+    if (remaining > 0) {
+      status.textContent = `余余 ${remaining} 票`;
+    } else {
+      status.textContent = '已給滿';
+    }
+  });
+}
+
+function voteAccommodation(option) {
+  const userVotes = JSON.parse(localStorage.getItem('pattaya_user_votes')) || [];
+  const votes = JSON.parse(localStorage.getItem('pattaya_votes')) || {};
+  
+  // 棄驗票數是否已綅滿
+  if (userVotes.length >= VOTE_LIMIT) {
+    alert(`您已經投了 ${VOTE_LIMIT} 票，不能再投票了！`);
+    return;
+  }
+  
+  // 棄重複投票
+  if (userVotes.includes(option)) {
+    alert('您已經為此選項投票了！');
+    return;
+  }
+  
+  // 記錄投票
+  userVotes.push(option);
+  votes[option] = (votes[option] || 0) + 1;
+  
+  localStorage.setItem('pattaya_user_votes', JSON.stringify(userVotes));
+  localStorage.setItem('pattaya_votes', JSON.stringify(votes));
+  
+  // 更新按鈕狀态
+  const btn = document.getElementById(`vote-${option}`);
+  btn.classList.add('voted');
+  btn.textContent = '✓ 已投票';
+  btn.disabled = true;
+  
+  // 更新投票計數
+  document.getElementById(`count-${option}`).textContent = `${votes[option]} 票`;
+  
+  // 更新投票數量提示
+  updateVoteStatus(userVotes);
+  
+  alert('投票成功！感謝您的參與。');
+}
+
+// 頁面加載時初始化投票
+window.addEventListener('load', loadVotes);
 
 </script>
 </body>
