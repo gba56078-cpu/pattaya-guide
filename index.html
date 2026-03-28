@@ -1055,8 +1055,23 @@ function initializeVotes() {
   // 嘗試從 localStorage 恢復之前的投票
   const savedVotes = localStorage.getItem('pattaya_votes_global');
   if (savedVotes) {
-    globalVotes = JSON.parse(savedVotes);
+    try {
+      globalVotes = JSON.parse(savedVotes);
+    } catch (e) {
+      console.log('投票數據損壞，已重置');
+      globalVotes = {};
+      ACCOMMODATION_OPTIONS.forEach(option => {
+        globalVotes[option] = 0;
+      });
+    }
   }
+  
+  // 確保所有選項都有初始值
+  ACCOMMODATION_OPTIONS.forEach(option => {
+    if (!(option in globalVotes)) {
+      globalVotes[option] = 0;
+    }
+  });
 }
 
 // 更新投票顯示
@@ -1064,21 +1079,32 @@ function updateVoteDisplay() {
   const userVotes = JSON.parse(localStorage.getItem('pattaya_user_votes')) || [];
   
   ACCOMMODATION_OPTIONS.forEach(option => {
+    // 確保票數正確顯示
     const count = globalVotes[option] || 0;
     const countElement = document.getElementById(`count-${option}`);
     if (countElement) {
       countElement.textContent = `${count} 票`;
+      // 強制更新以確保顯示
+      countElement.style.display = 'block';
     }
     
+    // 更新按鈕狀態
     const btn = document.getElementById(`vote-${option}`);
-    if (btn && userVotes.includes(option)) {
-      btn.classList.add('voted');
-      btn.textContent = '✓ 已投票';
-      btn.disabled = true;
+    if (btn) {
+      if (userVotes.includes(option)) {
+        btn.classList.add('voted');
+        btn.textContent = '✓ 已投票';
+        btn.disabled = true;
+      } else {
+        btn.classList.remove('voted');
+        btn.textContent = '👍 投票';
+        btn.disabled = false;
+      }
     }
   });
   
   updateVoteStatus(userVotes);
+  console.log('投票顯示已更新:', globalVotes);
 }
 
 function updateVoteStatus(userVotes) {
@@ -1135,15 +1161,40 @@ function voteAccommodation(option) {
   alert('投票成功！感謝您的參與。');
 }
 
+// 重置投票的函數（用於清空所有投票數據）
+function resetAllVotes() {
+  if (confirm('確定要重置所有投票嗎？此操作無法撤銷。')) {
+    globalVotes = {};
+    ACCOMMODATION_OPTIONS.forEach(option => {
+      globalVotes[option] = 0;
+    });
+    localStorage.removeItem('pattaya_votes_global');
+    localStorage.removeItem('pattaya_user_votes');
+    updateVoteDisplay();
+    alert('投票已重置！');
+    location.reload();
+  }
+}
+
 // 頁面加載時初始化投票
 window.addEventListener('load', () => {
   initializeVotes();
   updateVoteDisplay();
   
-  // 每 3 秒自動刷新一次投票數（模擬即時同步）
+  // 立即刷新一次以確保顯示
+  setTimeout(updateVoteDisplay, 100);
+  
+  // 每 2 秒自動刷新一次投票數（確保即時同步）
   setInterval(() => {
     updateVoteDisplay();
-  }, 3000);
+  }, 2000);
+});
+
+// 確保在頁面變得可見時更新投票
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    updateVoteDisplay();
+  }
 });
 
 </script>
