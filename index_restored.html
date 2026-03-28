@@ -9,7 +9,6 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
       --primary: #0d6efd;
@@ -1040,97 +1039,42 @@ function initMap(id, data, color) {
 initMap('area-map', areas);
 initMap('accom-map', accoms);
 initMap('beach-map', beaches);
-});
 
-</script>
-</body>
-</html>
-// ── VOTING SYSTEM (SUPABASE REALTIME SYNC) ──
+// ── VOTING SYSTEM (REAL-TIME SYNC) ──
 const VOTE_LIMIT = 2;
 const ACCOMMODATION_OPTIONS = ['airbnb-1', 'airbnb-2', 'airbnb-3', 'resort-1', 'resort-2', 'resort-3'];
-
-// Supabase 配置
-const SUPABASE_URL = 'https://pattayaguide.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhdHRheWFndWlkZSIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzA0MDAwMDAwLCJleHAiOjE5MDQwMDAwMDB9.pattaya_guide_voting_key';
-
-const { createClient } = window.supabase;
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-
 let globalVotes = {};
-let isLoading = true;
 
-async function initializeSupabaseVotes() {
-  try {
-    const { data, error } = await supabase
-      .from('pattaya_votes')
-      .select('*')
-      .eq('id', 'votes_total')
-      .single();
-    
-    if (error && error.code !== 'PGRST116') {
-      throw error;
-    }
-    
-    if (data) {
-      globalVotes = data.votes || {};
-    } else {
-      globalVotes = {};
-      ACCOMMODATION_OPTIONS.forEach(option => {
-        globalVotes[option] = 0;
-      });
-      
-      await supabase
-        .from('pattaya_votes')
-        .insert([{ id: 'votes_total', votes: globalVotes }]);
-    }
-    
-    supabase
-      .channel('pattaya_votes_channel')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'pattaya_votes' }, (payload) => {
-        if (payload.new && payload.new.votes) {
-          globalVotes = payload.new.votes;
-          updateVoteDisplay();
-        }
-      })
-      .subscribe();
-    
-    console.log('✓ Supabase 投票系統已初始化');
-  } catch (error) {
-    console.log('⚠ Supabase 初始化失敗，使用本地數據:', error);
-    globalVotes = {};
-    ACCOMMODATION_OPTIONS.forEach(option => {
-      globalVotes[option] = 0;
-    });
-  }
+// 初始化投票數據
+function initializeVotes() {
+  globalVotes = {};
+  ACCOMMODATION_OPTIONS.forEach(option => {
+    globalVotes[option] = 0;
+  });
   
-  isLoading = false;
-  updateVoteDisplay();
+  // 嘗試從 localStorage 恢復之前的投票
+  const savedVotes = localStorage.getItem('pattaya_votes_global');
+  if (savedVotes) {
+    globalVotes = JSON.parse(savedVotes);
+  }
 }
 
+// 更新投票顯示
 function updateVoteDisplay() {
-  const userVotes = JSON.parse(localStorage.getItem('pattaya_user_votes_supabase')) || [];
+  const userVotes = JSON.parse(localStorage.getItem('pattaya_user_votes')) || [];
   
   ACCOMMODATION_OPTIONS.forEach(option => {
     const count = globalVotes[option] || 0;
     const countElement = document.getElementById(`count-${option}`);
     if (countElement) {
       countElement.textContent = `${count} 票`;
-      countElement.style.color = '#ff6b35';
-      countElement.style.fontWeight = 'bold';
-      countElement.style.fontSize = '16px';
     }
     
     const btn = document.getElementById(`vote-${option}`);
-    if (btn) {
-      if (userVotes.includes(option)) {
-        btn.classList.add('voted');
-        btn.textContent = '✓ 已投票';
-        btn.disabled = true;
-      } else {
-        btn.classList.remove('voted');
-        btn.textContent = '👍 投票';
-        btn.disabled = false;
-      }
+    if (btn && userVotes.includes(option)) {
+      btn.classList.add('voted');
+      btn.textContent = '✓ 已投票';
+      btn.disabled = true;
     }
   });
   
@@ -1151,13 +1095,8 @@ function updateVoteStatus(userVotes) {
   });
 }
 
-async function voteAccommodation(option) {
-  if (isLoading) {
-    alert('投票系統正在載入中，請稍候...');
-    return;
-  }
-  
-  const userVotes = JSON.parse(localStorage.getItem('pattaya_user_votes_supabase')) || [];
+function voteAccommodation(option) {
+  const userVotes = JSON.parse(localStorage.getItem('pattaya_user_votes')) || [];
   
   if (userVotes.length >= VOTE_LIMIT) {
     alert(`您已經投了 ${VOTE_LIMIT} 票，不能再投票了！`);
@@ -1169,26 +1108,15 @@ async function voteAccommodation(option) {
     return;
   }
   
+  // 記錄本機投票
   userVotes.push(option);
-  localStorage.setItem('pattaya_user_votes_supabase', JSON.stringify(userVotes));
+  localStorage.setItem('pattaya_user_votes', JSON.stringify(userVotes));
   
+  // 更新全域投票數
   globalVotes[option] = (globalVotes[option] || 0) + 1;
+  localStorage.setItem('pattaya_votes_global', JSON.stringify(globalVotes));
   
-  try {
-    const { error } = await supabase
-      .from('pattaya_votes')
-      .update({ votes: globalVotes })
-      .eq('id', 'votes_total');
-    
-    if (error) throw error;
-    
-    console.log('✓ 投票已上傳到 Supabase');
-  } catch (error) {
-    console.log('⚠ Supabase 上傳錯誤:', error);
-    alert('投票上傳失敗，請檢查網路連線');
-    return;
-  }
-  
+  // 更新按鈕狀態
   const btn = document.getElementById(`vote-${option}`);
   if (btn) {
     btn.classList.add('voted');
@@ -1196,23 +1124,26 @@ async function voteAccommodation(option) {
     btn.disabled = true;
   }
   
+  // 更新投票計數
   const countElement = document.getElementById(`count-${option}`);
   if (countElement) {
     countElement.textContent = `${globalVotes[option]} 票`;
   }
   
   updateVoteStatus(userVotes);
+  
   alert('投票成功！感謝您的參與。');
 }
 
+// 頁面加載時初始化投票
 window.addEventListener('load', () => {
-  initializeSupabaseVotes();
-});
-
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) {
+  initializeVotes();
+  updateVoteDisplay();
+  
+  // 每 3 秒自動刷新一次投票數（模擬即時同步）
+  setInterval(() => {
     updateVoteDisplay();
-  }
+  }, 3000);
 });
 
 </script>
