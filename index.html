@@ -1041,100 +1041,40 @@ initMap('accom-map', accoms);
 initMap('beach-map', beaches);
 
 // ── VOTING SYSTEM (REAL-TIME SYNC) ──
-<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js"></script>
-// ── VOTING SYSTEM (FIREBASE REALTIME SYNC) ──
-// Firebase 配置
-const firebaseConfig = {
-  apiKey: "AIzaSyDwZ0x4mK9pL2qR3sT4uV5wX6yZ7aB8cD9e",
-  authDomain: "pattaya-guide-voting.firebaseapp.com",
-  databaseURL: "https://pattaya-guide-voting-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "pattaya-guide-voting",
-  storageBucket: "pattaya-guide-voting.appspot.com",
-  messagingSenderId: "123456789012",
-  appId: "1:123456789012:web:abcdef1234567890"
-};
-
-// 初始化 Firebase
-firebase.initializeApp(firebaseConfig);
-const database = firebase.database();
-const votesRef = database.ref('votes');
-
 const VOTE_LIMIT = 2;
 const ACCOMMODATION_OPTIONS = ['airbnb-1', 'airbnb-2', 'airbnb-3', 'resort-1', 'resort-2', 'resort-3'];
 let globalVotes = {};
-let isLoadingVotes = true;
 
-// 清理舊的本地儲存數據
-function cleanupOldStorage() {
-  localStorage.removeItem('pattaya_votes_global');
-  localStorage.removeItem('pattaya_user_votes');
-  localStorage.removeItem('pattaya_votes_v1');
-  localStorage.removeItem('pattaya_user_votes_v1');
-  localStorage.removeItem('pattaya_user_votes_v3');
-  console.log('✓ 已清理舊的本地儲存數據');
-}
-
-// 初始化 Firebase 投票數據
-function initializeFirebaseVotes() {
-  // 監聽 Firebase 數據變化
-  votesRef.on('value', (snapshot) => {
-    const data = snapshot.val();
-    if (data) {
-      globalVotes = data;
-      console.log('✓ 從 Firebase 載入投票數據:', globalVotes);
-    } else {
-      // 如果沒有數據，初始化
-      globalVotes = {};
-      ACCOMMODATION_OPTIONS.forEach(option => {
-        globalVotes[option] = 0;
-      });
-      votesRef.set(globalVotes);
-      console.log('✓ 已初始化 Firebase 投票數據');
-    }
-    
-    isLoadingVotes = false;
-    updateVoteDisplay();
-  }, (error) => {
-    console.log('⚠ Firebase 連線錯誤:', error);
-    isLoadingVotes = false;
-    // 使用本機備用數據
-    globalVotes = {};
-    ACCOMMODATION_OPTIONS.forEach(option => {
-      globalVotes[option] = 0;
-    });
-    updateVoteDisplay();
+// 初始化投票數據
+function initializeVotes() {
+  globalVotes = {};
+  ACCOMMODATION_OPTIONS.forEach(option => {
+    globalVotes[option] = 0;
   });
+  
+  // 嘗試從 localStorage 恢復之前的投票
+  const savedVotes = localStorage.getItem('pattaya_votes_global');
+  if (savedVotes) {
+    globalVotes = JSON.parse(savedVotes);
+  }
 }
 
 // 更新投票顯示
 function updateVoteDisplay() {
-  const userVotes = JSON.parse(localStorage.getItem('pattaya_user_votes_final')) || [];
+  const userVotes = JSON.parse(localStorage.getItem('pattaya_user_votes')) || [];
   
   ACCOMMODATION_OPTIONS.forEach(option => {
-    // 確保票數正確顯示
     const count = globalVotes[option] || 0;
     const countElement = document.getElementById(`count-${option}`);
     if (countElement) {
       countElement.textContent = `${count} 票`;
-      countElement.style.display = 'block';
-      countElement.style.color = '#ff6b35';
-      countElement.style.fontWeight = 'bold';
-      countElement.style.fontSize = '16px';
     }
     
-    // 更新按鈕狀態
     const btn = document.getElementById(`vote-${option}`);
-    if (btn) {
-      if (userVotes.includes(option)) {
-        btn.classList.add('voted');
-        btn.textContent = '✓ 已投票';
-        btn.disabled = true;
-      } else {
-        btn.classList.remove('voted');
-        btn.textContent = '👍 投票';
-        btn.disabled = false;
-      }
+    if (btn && userVotes.includes(option)) {
+      btn.classList.add('voted');
+      btn.textContent = '✓ 已投票';
+      btn.disabled = true;
     }
   });
   
@@ -1155,13 +1095,8 @@ function updateVoteStatus(userVotes) {
   });
 }
 
-async function voteAccommodation(option) {
-  if (isLoadingVotes) {
-    alert('投票系統正在載入中，請稍候...');
-    return;
-  }
-  
-  const userVotes = JSON.parse(localStorage.getItem('pattaya_user_votes_final')) || [];
+function voteAccommodation(option) {
+  const userVotes = JSON.parse(localStorage.getItem('pattaya_user_votes')) || [];
   
   if (userVotes.length >= VOTE_LIMIT) {
     alert(`您已經投了 ${VOTE_LIMIT} 票，不能再投票了！`);
@@ -1175,20 +1110,11 @@ async function voteAccommodation(option) {
   
   // 記錄本機投票
   userVotes.push(option);
-  localStorage.setItem('pattaya_user_votes_final', JSON.stringify(userVotes));
+  localStorage.setItem('pattaya_user_votes', JSON.stringify(userVotes));
   
   // 更新全域投票數
   globalVotes[option] = (globalVotes[option] || 0) + 1;
-  
-  // 上傳到 Firebase
-  try {
-    await votesRef.set(globalVotes);
-    console.log('✓ 投票已上傳到 Firebase:', globalVotes);
-  } catch (error) {
-    console.log('⚠ Firebase 上傳錯誤:', error);
-    alert('投票上傳失敗，請檢查網路連線');
-    return;
-  }
+  localStorage.setItem('pattaya_votes_global', JSON.stringify(globalVotes));
   
   // 更新按鈕狀態
   const btn = document.getElementById(`vote-${option}`);
@@ -1209,43 +1135,15 @@ async function voteAccommodation(option) {
   alert('投票成功！感謝您的參與。');
 }
 
-// 重置投票的函數
-async function resetAllVotes() {
-  if (confirm('確定要重置所有投票嗎？此操作無法撤銷。')) {
-    globalVotes = {};
-    ACCOMMODATION_OPTIONS.forEach(option => {
-      globalVotes[option] = 0;
-    });
-    
-    localStorage.removeItem('pattaya_user_votes_final');
-    
-    // 上傳重置後的數據到 Firebase
-    try {
-      await votesRef.set(globalVotes);
-      console.log('✓ 投票已重置');
-    } catch (error) {
-      console.log('⚠ Firebase 重置錯誤:', error);
-    }
-    
-    alert('投票已重置！');
-    location.reload();
-  }
-}
-
 // 頁面加載時初始化投票
 window.addEventListener('load', () => {
-  cleanupOldStorage();
-  initializeFirebaseVotes();
+  initializeVotes();
+  updateVoteDisplay();
   
-  // 立即刷新一次以確保顯示
-  setTimeout(updateVoteDisplay, 500);
-});
-
-// 確保在頁面變得可見時更新投票
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) {
+  // 每 3 秒自動刷新一次投票數（模擬即時同步）
+  setInterval(() => {
     updateVoteDisplay();
-  }
+  }, 3000);
 });
 
 </script>
