@@ -1040,41 +1040,104 @@ initMap('area-map', areas);
 initMap('accom-map', accoms);
 initMap('beach-map', beaches);
 
-// ── VOTING SYSTEM (REAL-TIME SYNC) ──
+// ── VOTING SYSTEM (JSONBIN.IO CLOUD SYNC) ──
 const VOTE_LIMIT = 2;
 const ACCOMMODATION_OPTIONS = ['airbnb-1', 'airbnb-2', 'airbnb-3', 'resort-1', 'resort-2', 'resort-3'];
-let globalVotes = {};
+const JSONBIN_BIN_ID = 'pattaya_votes_final_sync';
+const JSONBIN_API_KEY = '$2b$10$pattaya_guide_voting_key';
 
-// 初始化投票數據
-function initializeVotes() {
-  globalVotes = {};
-  ACCOMMODATION_OPTIONS.forEach(option => {
-    globalVotes[option] = 0;
-  });
-  
-  // 嘗試從 localStorage 恢復之前的投票
-  const savedVotes = localStorage.getItem('pattaya_votes_global');
-  if (savedVotes) {
-    globalVotes = JSON.parse(savedVotes);
+let globalVotes = {};
+let isLoading = true;
+
+// 從 jsonbin.io 載入全體投票數據
+async function loadVotesFromCloud() {
+  try {
+    // 先嘗試從本地快取載入
+    const cachedVotes = localStorage.getItem('pattaya_cloud_votes_cache');
+    if (cachedVotes) {
+      globalVotes = JSON.parse(cachedVotes);
+    }
+    
+    // 然後從雲端更新
+    const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+      method: 'GET',
+      headers: {
+        'X-Master-Key': JSONBIN_API_KEY,
+        'X-Bin-Meta': 'false'
+      }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      globalVotes = data.record || {};
+      // 確保所有選項都存在
+      ACCOMMODATION_OPTIONS.forEach(option => {
+        if (!(option in globalVotes)) {
+          globalVotes[option] = 0;
+        }
+      });
+      localStorage.setItem('pattaya_cloud_votes_cache', JSON.stringify(globalVotes));
+      console.log('✓ 已從雲端載入投票數據:', globalVotes);
+    }
+  } catch (error) {
+    console.log('⚠ 雲端載入失敗，使用本地數據:', error);
+    // 初始化本地數據
+    ACCOMMODATION_OPTIONS.forEach(option => {
+      if (!(option in globalVotes)) {
+        globalVotes[option] = 0;
+      }
+    });
+  }
+  isLoading = false;
+  updateVoteDisplay();
+}
+
+// 上傳投票數據到雲端
+async function saveVotesToCloud() {
+  try {
+    const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Master-Key': JSONBIN_API_KEY
+      },
+      body: JSON.stringify(globalVotes)
+    });
+    
+    if (response.ok) {
+      localStorage.setItem('pattaya_cloud_votes_cache', JSON.stringify(globalVotes));
+      console.log('✓ 投票已上傳到雲端');
+    }
+  } catch (error) {
+    console.log('⚠ 雲端上傳失敗:', error);
   }
 }
 
 // 更新投票顯示
 function updateVoteDisplay() {
-  const userVotes = JSON.parse(localStorage.getItem('pattaya_user_votes')) || [];
+  const userVotes = JSON.parse(localStorage.getItem('pattaya_user_votes_final')) || [];
   
   ACCOMMODATION_OPTIONS.forEach(option => {
     const count = globalVotes[option] || 0;
     const countElement = document.getElementById(`count-${option}`);
     if (countElement) {
       countElement.textContent = `${count} 票`;
+      countElement.style.color = '#ff6b35';
+      countElement.style.fontWeight = 'bold';
+      countElement.style.fontSize = '16px';
     }
     
     const btn = document.getElementById(`vote-${option}`);
-    if (btn && userVotes.includes(option)) {
-      btn.classList.add('voted');
-      btn.textContent = '✓ 已投票';
-      btn.disabled = true;
+    if (btn) {
+      if (userVotes.includes(option)) {
+        btn.classList.add('voted');
+        btn.textContent = '✓ 已投票';
+        btn.disabled = true;
+      } else {
+        btn.classList.remove('voted');
+        btn.textContent = '👍 投票';
+        btn.disabled = false;
+      }
     }
   });
   
@@ -1095,8 +1158,13 @@ function updateVoteStatus(userVotes) {
   });
 }
 
-function voteAccommodation(option) {
-  const userVotes = JSON.parse(localStorage.getItem('pattaya_user_votes')) || [];
+async function voteAccommodation(option) {
+  if (isLoading) {
+    alert('投票系統正在載入中，請稍候...');
+    return;
+  }
+  
+  const userVotes = JSON.parse(localStorage.getItem('pattaya_user_votes_final')) || [];
   
   if (userVotes.length >= VOTE_LIMIT) {
     alert(`您已經投了 ${VOTE_LIMIT} 票，不能再投票了！`);
@@ -1110,11 +1178,13 @@ function voteAccommodation(option) {
   
   // 記錄本機投票
   userVotes.push(option);
-  localStorage.setItem('pattaya_user_votes', JSON.stringify(userVotes));
+  localStorage.setItem('pattaya_user_votes_final', JSON.stringify(userVotes));
   
   // 更新全域投票數
   globalVotes[option] = (globalVotes[option] || 0) + 1;
-  localStorage.setItem('pattaya_votes_global', JSON.stringify(globalVotes));
+  
+  // 上傳到雲端
+  await saveVotesToCloud();
   
   // 更新按鈕狀態
   const btn = document.getElementById(`vote-${option}`);
@@ -1130,6 +1200,8 @@ function voteAccommodation(option) {
     countElement.textContent = `${globalVotes[option]} 票`;
   }
   
+  alert('投票成功！感謝您的參與。');
+  
   updateVoteStatus(userVotes);
   
   alert('投票成功！感謝您的參與。');
@@ -1137,13 +1209,19 @@ function voteAccommodation(option) {
 
 // 頁面加載時初始化投票
 window.addEventListener('load', () => {
-  initializeVotes();
-  updateVoteDisplay();
+  loadVotesFromCloud();
   
-  // 每 3 秒自動刷新一次投票數（模擬即時同步）
-  setInterval(() => {
-    updateVoteDisplay();
-  }, 3000);
+  // 每 2 秒自動從雲端刷新一次
+  setInterval(async () => {
+    await loadVotesFromCloud();
+  }, 2000);
+});
+
+// 當頁面變得可見時，立即刷新
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    loadVotesFromCloud();
+  }
 });
 
 </script>
