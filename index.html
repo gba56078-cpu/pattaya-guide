@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>無馬外出芭堤雅番 | 7/10–7/13 泰國之旅</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --primary: #0d6efd;
+      --primary-dark: #0a58ca;
+      --accent: #ff6b35;
+      --accent2: #ffd166;
+      --teal: #06d6a0;
+      --dark: #1a1a2e;
+      --mid: #16213e;
+      --card-bg: #ffffff;
+      --text: #2d3748;
+      --text-light: #718096;
+      --border: #e2e8f0;
+      --shadow: 0 4px 24px rgba(0,0,0,0.08);
+      --shadow-hover: 0 8px 40px rgba(0,0,0,0.15);
+      --radius: 16px;
+      --radius-sm: 8px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background: #f7f9fc;
+      color: var(--text);
+      line-height: 1.7;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      background: linear-gradient(135deg, #0d6efd 0%, #06d6a0 50%, #ff6b35 100%);
+      color: white;
+      padding: 100px 24px 80px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='20'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      animation: bgMove 20s linear infinite;
+    }
+    @keyframes bgMove { from { background-position: 0 0; } to { background-position: 60px 60px; } }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.4);
+      border-radius: 50px;
+      padding: 6px 20px;
+      font-size: 0.85rem;
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+      backdrop-filter: blur(8px);
+    }
+    .hero h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-weight: 700;
+      text-shadow: 0 2px 20px rgba(0,0,0,0.2);
+      margin-bottom: 16px;
+    }
+    .hero p {
+      font-size: 1.2rem;
+      opacity: 0.9;
+      max-width: 600px;
+      margin: 0 auto 32px;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky; top: 0; z-index: 1000;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    nav::-webkit-scrollbar { display: none; }
+    .nav-logo { font-weight: 700; color: var(--primary); margin-right: 16px; white-space: nowrap; font-size: 0.95rem; }
+    nav a {
+      display: flex; align-items: center; gap: 6px;
+      padding: 16px 14px;
+      text-decoration: none;
+      color: var(--text-light);
+      font-size: 0.88rem;
+      font-weight: 500;
+      white-space: nowrap;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    nav a:hover, nav a.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+
+    /* ── LAYOUT ── */
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+    section { padding: 80px 0; }
+    section:nth-child(even) { background: white; }
+
+    /* ── SECTION HEADER ── */
+    .section-header { text-align: center; margin-bottom: 48px; }
+    .section-tag {
+      display: inline-block;
+      background: linear-gradient(135deg, var(--primary), var(--teal));
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      padding: 4px 16px;
+      border-radius: 50px;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+    }
+    .section-header h2 {
+      font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+      font-weight: 700;
+      color: var(--dark);
+      margin-bottom: 12px;
+    }
+    .section-header p {
+      color: var(--text-light);
+      max-width: 600px;
+      margin: 0 auto;
+      font-size: 1.05rem;
+    }
+
+    /* ── MAPS ── */
+    .map-container {
+      height: 500px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      margin-bottom: 32px;
+      border: 1px solid var(--border);
+    }
+
+    /* ── CARDS ── */
+    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; }
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 32px; }
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      transition: transform 0.3s, box-shadow 0.3s;
+      display: flex; flex-direction: column;
+    }
+    .card:hover { transform: translateY(-6px); box-shadow: var(--shadow-hover); }
+    .card-header {
+      padding: 24px 24px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .card-title { font-size: 1.2rem; font-weight: 700; color: var(--dark); }
+    .card-subtitle { font-size: 0.85rem; color: var(--text-light); margin-top: 4px; }
+    .card-body { padding: 20px 24px; flex: 1; }
+    .card-footer {
+      padding: 16px 24px;
+      background: #f8fafc;
+      border-top: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+
+    /* ── TAGS ── */
+    .tag {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 50px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin: 2px;
+    }
+    .tag-blue { background: #dbeafe; color: #1d4ed8; }
+    .tag-green { background: #d1fae5; color: #065f46; }
+    .tag-orange { background: #ffedd5; color: #9a3412; }
+    .tag-purple { background: #ede9fe; color: #5b21b6; }
+
+    /* ── BUTTONS ── */
+    .btn-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 20px;
+      background: var(--primary);
+      color: white;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+    .btn-link:hover { background: var(--primary-dark); }
+
+    /* ── ACCOMMODATION TABS ── */
+    .accom-tabs { display: flex; gap: 12px; margin-bottom: 40px; justify-content: center; }
+    .accom-tab {
+      padding: 12px 32px;
+      border: 2px solid var(--border);
+      background: white;
+      border-radius: 50px;
+      font-size: 1rem; font-weight: 600;
+      cursor: pointer; transition: all 0.2s;
+      color: var(--text-light);
+    }
+    .accom-tab.active {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: white;
+    }
+    .accom-panel { display: none; }
+    .accom-panel.active { display: block; }
+
+    /* ── ITINERARY ── */
+    .trip-overview {
+      background: linear-gradient(135deg, var(--dark) 0%, var(--mid) 100%);
+      color: white;
+      border-radius: var(--radius);
+      padding: 40px;
+      margin-bottom: 48px;
+    }
+    .trip-days { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
+    .trip-day {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: var(--radius-sm);
+      padding: 20px;
+    }
+    .trip-day-label { font-size: 0.8rem; opacity: 0.7; margin-bottom: 6px; }
+    .trip-day-title { font-weight: 700; font-size: 1.1rem; }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--dark);
+      color: rgba(255,255,255,0.7);
+      text-align: center;
+      padding: 48px 24px;
+      font-size: 0.9rem;
+    }
+
+    /* ── ANIMATIONS ── */
+    .fade-in { opacity: 0; transform: translateY(20px); transition: opacity 0.6s, transform 0.6s; }
+    .fade-in.visible { opacity: 1; transform: translateY(0); }
+
+    /* ── INFO BOX ── */
+    .info-box {
+      background: #eff6ff;
+      border-left: 4px solid var(--primary);
+      border-radius: var(--radius-sm);
+      padding: 20px;
+      margin-bottom: 32px;
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">🇹🇭 泰國 · 芭堤雅 · 2026</div>
+  <h1>無馬外出芭堤雅番</h1>
+  <p>7月10日 – 13日 · 3晚4天 深度探索指南</p>
+</div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">🏖️ 芭堤雅指南</div>
+  <a href="#areas" class="active">🗺️ 分區介紹</a>
+  <a href="#accommodation">🏨 住宿選擇</a>
+  <a href="#itinerary">📅 行程規劃</a>
+  <a href="#beaches">🌊 海灘地圖</a>
+</nav>
+
+<!-- SECTION 1: AREAS -->
+<section id="areas">
+  <div class="container">
+    <div class="section-header fade-in">
+      <div class="section-tag">分區介紹</div>
+      <h2>芭堤雅分區完整介紹</h2>
+      <p>點擊地圖上的標記，探索芭堤雅各具特色的熱門區域</p>
+    </div>
+
+    <div id="area-map" class="map-container fade-in"></div>
+
+      <div class="grid-3 fade-in">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">北芭堤雅 / 那克盧亞</div>
+            <div class="card-subtitle">Naklua / North Pattaya</div>
+          </div>
+          <div class="card-body">
+            <p><strong>特色：</strong>芭堤雅最清幽的區域，遠離喧囂的市中心。這裡是高級飯店與度假村的聚集地，如 Centara Grand Mirage、Cape Dara Resort 等五星級飯店均位於此。</p>
+            <p style="margin-top:12px;"><strong>海灘：</strong>翁阿瑪特海灘（Ong Ang Beach）水質清澈，沙灘寬闊，適合游泳與放鬆。遊客相對稀少，是當地人與高級飯店客人的首選。</p>
+            <p style="margin-top:12px;"><strong>美食：</strong>沿著海岸線有許多在地海鮮餐廳，價格親民且新鮮。推薦品嚐當地特色海鮮粥與烤魚。</p>
+            <p style="margin-top:12px;"><strong>適合：</strong>想要遠離人群、享受寧靜度假的旅客。適合情侶或家庭旅行，不太適合尋求夜生活的男生團體。</p>
+            <div style="margin-top:12px;">
+              <span class="tag tag-blue">清幽</span> <span class="tag tag-green">海鮮</span> <span class="tag tag-orange">高級飯店</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">中芭堤雅</div>
+            <div class="card-subtitle">Central Pattaya</div>
+          </div>
+          <div class="card-body">
+            <p><strong>特色：</strong>芭堤雅的商業心臟，繁華熱鬧的購物與娛樂中心。Terminal 21、Central Festival 等大型購物中心林立，國際品牌與泰國特色商品應有盡有。</p>
+            <p style="margin-top:12px;"><strong>交通：</strong>交通最為便利，計程車、嘟嘟車、摩托計程車隨處可得。距離機場約 2 小時車程，是遊客最常下榻的區域。</p>
+            <p style="margin-top:12px;"><strong>住宿：</strong>飯店、民宿、Airbnb 選擇最多，價格從經濟到豪華應有盡有。適合各種預算的旅客。</p>
+            <p style="margin-top:12px;"><strong>適合：</strong>初訪芭堤雅的旅客、購物愛好者、想要方便交通的團體。是最安全、最方便的選擇。</p>
+            <div style="margin-top:12px;">
+              <span class="tag tag-orange">最熱鬧</span> <span class="tag tag-blue">購物</span> <span class="tag tag-purple">交通便利</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">步行街區域</div>
+            <div class="card-subtitle">Walking Street / South Pattaya</div>
+          </div>
+          <div class="card-body">
+            <p><strong>特色：</strong>芭堤雅夜生活的一級戰區，是男生旅行的必去之地。入夜後霓虹閃爍、音樂震撼，酒吧、夜店、餐廳雲集。</p>
+            <p style="margin-top:12px;"><strong>夜生活：</strong>從傍晚 6 點開始營業，越晚越熱鬧。蒂芬妮人妖秀、阿克薩人妖秀等表演秀都在此區域。午夜後人潮最多。</p>
+            <p style="margin-top:12px;"><strong>周邊：</strong>附近的 Soi Buakhao 酒吧街更加親民，適合小酌與聊天。還有許多泰式按摩店與 SPA。</p>
+            <p style="margin-top:12px;"><strong>適合：</strong>尋求刺激夜生活、想要體驗芭堤雅夜間文化的男生團體。需注意安全與消費陷阱。</p>
+            <div style="margin-top:12px;">
+              <span class="tag tag-purple">夜生活</span> <span class="tag tag-orange">酒吧</span> <span class="tag tag-blue">表演秀</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">帕塔姆納克山</div>
+            <div class="card-subtitle">Pattamnak Hill / Pratumnak</div>
+          </div>
+          <div class="card-body">
+            <p><strong>特色：</strong>芭堤雅最優雅的高級住宅區，位於山丘上，景觀視野遼闊。這裡集中了許多高端度假村與精品飯店。</p>
+            <p style="margin-top:12px;"><strong>景觀：</strong>可俯瞰芭堤雅灣全景，尤其是日落時分美不勝收。許多飯店都設有無邊際泳池，景觀絕佳。</p>
+            <p style="margin-top:12px;"><strong>海灘：</strong>帕塔姆納克海灘相對安靜，水質良好。是拍照打卡的絕佳地點，尤其是日出與日落時段。</p>
+            <p style="margin-top:12px;"><strong>適合：</strong>預算充足、追求品質度假的旅客。適合蜜月旅行或高級團體旅遊。</p>
+            <div style="margin-top:12px;">
+              <span class="tag tag-orange">高級</span> <span class="tag tag-green">景觀</span> <span class="tag tag-blue">浪漫</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">中天海灘</div>
+            <div class="card-subtitle">Jomtien Beach</div>
+          </div>
+          <div class="card-body">
+            <p><strong>特色：</strong>芭堤雅最長的海灘，沙灘寬闊，適合各種水上活動。沿著海灘有許多餐廳、咖啡廳與酒吧。</p>
+            <p style="margin-top:12px;"><strong>活動：</strong>水上活動豐富，包括滑翔傘、香蕉船、快艇等。晚間中天夜市熱鬧非凡，是品嚐街頭美食的好地方。</p>
+            <p style="margin-top:12px;"><strong>住宿：</strong>許多中高級飯店與 Airbnb 別墅位於此區，距海灘近，生活機能完善。</p>
+            <p style="margin-top:12px;"><strong>適合：</strong>喜歡水上活動、想要體驗當地夜生活的旅客。適合家庭、情侶與男生團體。</p>
+            <div style="margin-top:12px;">
+              <span class="tag tag-blue">水上活動</span> <span class="tag tag-green">美食</span> <span class="tag tag-orange">夜市</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">那中天 / 邦薩雷</div>
+            <div class="card-subtitle">Na Jomtien / Bang Saray</div>
+          </div>
+          <div class="card-body">
+            <p><strong>特色：</strong>芭堤雅最南端的區域，也是最清幽的秘境。這裡遠離遊客聚集地，保留了泰國海邊小鎮的原始風貌。</p>
+            <p style="margin-top:12px;"><strong>海灘：</strong>邦薩雷海灘水質最清澈，沙灘細軟，遊客稀少。是浮潛、游泳的最佳地點。</p>
+            <p style="margin-top:12px;"><strong>住宿：</strong>高級別墅與精品度假村集中於此，如 Cross Pattaya Oceanphere 等設計感十足的飯店。</p>
+            <p style="margin-top:12px;"><strong>適合：</strong>想要遠離人群、享受高級隱私度假的旅客。適合蜜月、家庭或小型精英團體。</p>
+            <div style="margin-top:12px;">
+              <span class="tag tag-green">秘境</span> <span class="tag tag-blue">清澈海水</span> <span class="tag tag-orange">豪華別墅</span>
+            </div>
+          </div>
+        </div>
+      </div>
+  </div>
+</section>
+
+<!-- SECTION 2: ACCOMMODATION -->
+<section id="accommodation">
+  <div class="container">
+    <div class="section-header fade-in">
+      <div class="section-tag">住宿選擇</div>
+      <h2>精選住宿推薦</h2>
+      <p>為你們挑選了 3 間頂級 Airbnb 包棟別墅與 3 間豪華度假村</p>
+    </div>
+
+    <div id="accom-map" class="map-container fade-in"></div>
+
+    <div class="accom-tabs fade-in">
+      <button class="accom-tab active" onclick="showAccom('airbnb')">🏡 Airbnb 包棟</button>
+      <button class="accom-tab" onclick="showAccom('resort')">🌴 豪華度假村</button>
+    </div>
+
+    <!-- AIRBNB -->
+    <div id="accom-airbnb" class="accom-panel active fade-in">
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">p22 中天別墅</div>
+            <div class="card-subtitle">📍 中天海灘區</div>
+          </div>
+          <div class="card-body">
+            <p>全新推出的豪華別墅，擁有 4 間臥室與私人泳池。獲得 5.0 星高分評價，環境整潔且設備現代化，非常適合 8 人團體。</p>
+            <div style="margin-top:12px;">
+              <span class="tag tag-blue">4房</span> <span class="tag tag-green">私人泳池</span> <span class="tag tag-orange">全新</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <div style="font-weight:700; color:var(--accent);">約 NT$31,524 <small>/3晚</small></div>
+            <a href="https://www.airbnb.com.tw/rooms/1349239359065687878" target="_blank" class="btn-link">查看房源 →</a>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Mövenpick 私人泳池別墅</div>
+            <div class="card-subtitle">📍 那中天區</div>
+          </div>
+          <div class="card-body">
+            <p>2025 年全新完工，擁有 6 間臥室的超大型別墅。位於 Mövenpick 園區內，可享用度假村設施，空間極大且極具隱私。</p>
+            <div style="margin-top:12px;">
+              <span class="tag tag-blue">6房</span> <span class="tag tag-green">超大空間</span> <span class="tag tag-purple">奢華</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <div style="font-weight:700; color:var(--accent);">約 NT$68,050 <small>/3晚</small></div>
+            <a href="https://www.airbnb.com.tw/rooms/1338763244250097181" target="_blank" class="btn-link">查看房源 →</a>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">中天豪華 4 臥泳池別墅</div>
+            <div class="card-subtitle">📍 中天海灘 (距海 50m)</div>
+          </div>
+          <div class="card-body">
+            <p>地理位置絕佳，距離海灘僅 50 公尺。提供免費接機服務，設有按摩浴缸與私人泳池，步行即可抵達中天夜市。</p>
+            <div style="margin-top:12px;">
+              <span class="tag tag-blue">4房</span> <span class="tag tag-orange">近海灘</span> <span class="tag tag-green">送接機</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <div style="font-weight:700; color:var(--accent);">約 NT$42,713 <small>/3晚</small></div>
+            <a href="https://www.airbnb.com.tw/rooms/1410719493045136394" target="_blank" class="btn-link">查看房源 →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESORTS -->
+    <div id="accom-resort" class="accom-panel fade-in">
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Cape Dara Resort</div>
+            <div class="card-subtitle">📍 北芭堤雅 · 私人海岬</div>
+          </div>
+          <div class="card-body">
+            <p>芭堤雅最著名的五星級海濱度假村之一，坐落於私人海岬，所有客房均享有壯麗海景。擁有絕美的無邊際泳池與私人沙灘。</p>
+            <div style="margin-top:12px;">
+              <span class="tag tag-blue">5星</span> <span class="tag tag-green">無邊際泳池</span> <span class="tag tag-teal">全海景</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <div style="font-weight:700; color:var(--accent);">頂級奢華選擇</div>
+            <a href="https://capedarapattaya.com/zh-hans/" target="_blank" class="btn-link">官方網站 →</a>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Centara Grand Mirage</div>
+            <div class="card-subtitle">📍 北芭堤雅 · 翁阿瑪特海灘</div>
+          </div>
+          <div class="card-body">
+            <p>以「失落的世界」為主題的叢林水上樂園度假村。擁有 230 公尺長的私人沙灘，設施極其豐富，非常適合團體出遊尋找樂趣。</p>
+            <div style="margin-top:12px;">
+              <span class="tag tag-blue">5星</span> <span class="tag tag-orange">水上樂園</span> <span class="tag tag-green">私人沙灘</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <div style="font-weight:700; color:var(--accent);">歡樂度假首選</div>
+            <a href="https://www.centarahotelsresorts.com/centaragrand/cn/cmbr" target="_blank" class="btn-link">官方網站 →</a>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Cross Pattaya Oceanphere</div>
+            <div class="card-subtitle">📍 邦薩雷 · 奢華別墅區</div>
+          </div>
+          <div class="card-body">
+            <p>全別墅型度假村，設計感十足。每棟別墅均配有私人泳池，環境極其安靜優雅，適合想要高品質、遠離塵囂的旅客。</p>
+            <div style="margin-top:12px;">
+              <span class="tag tag-purple">設計感</span> <span class="tag tag-green">全別墅</span> <span class="tag tag-blue">高隱私</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <div style="font-weight:700; color:var(--accent);">約 NT$48,000 <small>/3晚8人</small></div>
+            <a href="https://www.booking.com/hotel/th/x2-pattaya-oceanphere-residence.zh-tw.html" target="_blank" class="btn-link">查看詳情 →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 3: ITINERARY -->
+<section id="itinerary">
+  <div class="container">
+    <div class="section-header fade-in">
+      <div class="section-tag">行程規劃</div>
+      <h2>7/10 – 7/13 行程概覽</h2>
+      <p>為你們量身打造的四天三夜精彩行程</p>
+    </div>
+
+    <div class="trip-overview fade-in">
+      <div class="trip-days">
+        <div class="trip-day">
+          <div class="trip-day-label">Day 1 · 7/10</div>
+          <div class="trip-day-title">抵達與夜生活</div>
+          <p style="font-size:0.85rem; margin-top:8px; opacity:0.8;">12:10 抵達 BKK → 包車前往芭堤雅 → 入住別墅 → 步行街探索</p>
+        </div>
+        <div class="trip-day">
+          <div class="trip-day-label">Day 2 · 7/11</div>
+          <div class="trip-day-title">格蘭島水上活動</div>
+          <p style="font-size:0.85rem; margin-top:8px; opacity:0.8;">格蘭島包船一日遊 → 浮潛、拖曳傘 → 傍晚中天夜市美食</p>
+        </div>
+        <div class="trip-day">
+          <div class="trip-day-label">Day 3 · 7/12</div>
+          <div class="trip-day-title">文化與表演秀</div>
+          <p style="font-size:0.85rem; margin-top:8px; opacity:0.8;">真理寺木雕奇觀 → 四方水上市場 → 晚上觀賞人妖秀</p>
+        </div>
+        <div class="trip-day">
+          <div class="trip-day-label">Day 4 · 7/13</div>
+          <div class="trip-day-title">購物與返程</div>
+          <p style="font-size:0.85rem; margin-top:8px; opacity:0.8;">Terminal 21 購物 → 10:30 出發前往機場 → 13:20 飛機起飛</p>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:48px;">
+      <h3 style="font-size:1.4rem; font-weight:700; text-align:center; margin-bottom:32px; color:var(--dark);">🔥 熱門行程推薦</h3>
+      <div class="grid-3 fade-in">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">格蘭島一日遊</div>
+            <div class="card-subtitle">Koh Larn Day Trip</div>
+          </div>
+          <div class="card-body">
+            <p>芭堤雅必去景點！搭船前往格蘭島，享受浮潛、拖曳傘、香蕉船等水上活動。海水清澈，適合８人團體包船。</p>
+            <div style="margin-top:12px;">
+              <span class="tag tag-blue">水上活動</span> <span class="tag tag-green">浮潛</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <div style="font-size:0.85rem; color:var(--text-light);">\u534a\u5929 / \u5168\u5929</div>
+            <a href="https://heidihihi.com/koh-larn-pattaya/" target="_blank" style="display:inline-block; margin-top:12px; padding:8px 16px; background:var(--primary); color:white; border-radius:6px; text-decoration:none; font-size:0.85rem; font-weight:600;">查看攻略 →</a>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">真理寺</div>
+            <div class="card-subtitle">Sanctuary of Truth</div>
+          </div>
+          <div class="card-body">
+            <p>芭堤雅地標景點，全木造建築，精雕細琢的木雕藝術令人驚嘆。適合拍照打卡，了解泰國傳統文化。</p>
+            <div style="margin-top:12px;">
+              <span class="tag tag-orange">文化景點</span> <span class="tag tag-blue">拍照</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <div style="font-size:0.85rem; color:var(--text-light);">2-3\u5c0f\u6642</div>
+            <a href="https://yunsfam.com/2025/09/25/sanctuaryoftruth/" target="_blank" style="display:inline-block; margin-top:12px; padding:8px 16px; background:var(--primary); color:white; border-radius:6px; text-decoration:none; font-size:0.85rem; font-weight:600;">查看攻略 →</a>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">蒂芬妮人妖秀</div>
+            <div class="card-subtitle">Tiffany's Show</div>
+          </div>
+          <div class="card-body">
+            <p>芭堤雅最著名的人妖表演秀，華麗的服裝與精彩的舞蹈表演。男生旅行必看，晚間演出，適合團體預訂。</p>
+            <div style="margin-top:12px;">
+              <span class="tag tag-purple">表演秀</span> <span class="tag tag-orange">夜生活</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <div style="font-size:0.85rem; color:var(--text-light);">\u665a\u4e0a / 1.5\u5c0f\u6642</div>
+            <a href="https://www.bring-you.info/zh-tw/tiffanys-show-ladyboy" target="_blank" style="display:inline-block; margin-top:12px; padding:8px 16px; background:var(--primary); color:white; border-radius:6px; text-decoration:none; font-size:0.85rem; font-weight:600;">查看評價 →</a>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">四方水上市場</div>
+            <div class="card-subtitle">Floating Market</div>
+          </div>
+          <div class="card-body">
+            <p>泰國傳統水上市場，可搭乘木船遊覽，品嚐在地美食與手工藝品。體驗道地泰國文化的最佳方式。</p>
+            <div style="margin-top:12px;">
+              <span class="tag tag-blue">市場</span> <span class="tag tag-green">美食</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <div style="font-size:0.85rem; color:var(--text-light);">3-4\u5c0f\u6642</div>
+            <a href="https://baofamily.tw/pattaya-floating-market/" target="_blank" style="display:inline-block; margin-top:12px; padding:8px 16px; background:var(--primary); color:white; border-radius:6px; text-decoration:none; font-size:0.85rem; font-weight:600;">查看攻略 →</a>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Terminal 21 購物中心</div>
+            <div class="card-subtitle">Shopping Mall</div>
+          </div>
+          <div class="card-body">
+            <p>芭堤雅最大的購物中心，集結國際品牌與泰國特色商品。每層樓代表不同國家主題，購物與拍照兼具。</p>
+            <div style="margin-top:12px;">
+              <span class="tag tag-orange">購物</span> <span class="tag tag-blue">拍照</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <div style="font-size:0.85rem; color:var(--text-light);">2-4\u5c0f\u6642</div>
+            <a href="https://followmii.tw/blog/post/terminal-21-pattaya" target="_blank" style="display:inline-block; margin-top:12px; padding:8px 16px; background:var(--primary); color:white; border-radius:6px; text-decoration:none; font-size:0.85rem; font-weight:600;">查看必買 →</a>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">郵輪晚宴</div>
+            <div class="card-subtitle">Dinner Cruise</div>
+          </div>
+          <div class="card-body">
+            <p>在海上享受晚餐與現場表演，欣賞芭堤雅夜景。浪漫的氛圍適合團體聚餐，享受泰式與國際美食。</p>
+            <div style="margin-top:12px;">
+              <span class="tag tag-purple">晚宴</span> <span class="tag tag-green">美食</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <div style="font-size:0.85rem; color:var(--text-light);">\u665a\u4e0a / 2\u5c0f\u6642</div>
+            <a href="https://sansalife.tw/ocean-sky-pattaya/" target="_blank" style="display:inline-block; margin-top:12px; padding:8px 16px; background:var(--primary); color:white; border-radius:6px; text-decoration:none; font-size:0.85rem; font-weight:600;">查看 Vlog →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:64px;">
+      <h3 style="font-size:1.4rem; font-weight:700; text-align:center; margin-bottom:32px; color:var(--dark);">💎 冷門隱藏景點</h3>
+      <div class="grid-3 fade-in">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">軍事海灘秘境</div>
+            <div class="card-subtitle">Sai Kaew Beach</div>
+          </div>
+          <div class="card-body">
+            <p>芭堤雅最清幽的海灘，水質最佳。遊客稀少，是當地人才知道的秘境。適合想遠離人群享受寧靜的旅客。</p>
+            <div style="margin-top:12px;">
+              <span class="tag tag-green">秘境</span> <span class="tag tag-blue">清幽</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <div style="font-size:0.85rem; color:var(--text-light);">\u5168\u5929</div>
+            <a href="https://flygaruda2free.pixnet.net/blog/posts/16049681456" target="_blank" style="display:inline-block; margin-top:12px; padding:8px 16px; background:var(--primary); color:white; border-radius:6px; text-decoration:none; font-size:0.85rem; font-weight:600;">查看秘境 →</a>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">叢林飛索</div>
+            <div class="card-subtitle">Jungle Zipline</div>
+          </div>
+          <div class="card-body">
+            <p>在熱帶叢林中體驗刺激的飛索活動。穿越樹林與瀑布，適合喜歡冒險的男生團體。安全設備完善。</p>
+            <div style="margin-top:12px;">
+              <span class="tag tag-orange">冒險</span> <span class="tag tag-purple">刺激</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <div style="font-size:0.85rem; color:var(--text-light);">2-3\u5c0f\u6642</div>
+            <a href="https://www.esquirehk.com/lifestyle/pattaya" target="_blank" style="display:inline-block; margin-top:12px; padding:8px 16px; background:var(--primary); color:white; border-radius:6px; text-decoration:none; font-size:0.85rem; font-weight:600;">查看推薦 →</a>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">卡丁車競速</div>
+            <div class="card-subtitle">Go-Kart Racing</div>
+          </div>
+          <div class="card-body">
+            <p>國際標準卡丁車賽道，適合男生團體比賽。設施現代化，提供安全裝備與教練指導。</p>
+            <div style="margin-top:12px;">
+              <span class="tag tag-orange">競速</span> <span class="tag tag-blue">團體活動</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <div style="font-size:0.85rem; color:var(--text-light);">1-2\u5c0f\u6642</div>
+            <a href="https://www.youtube.com/watch?v=8S51yF_pl_c" target="_blank" style="display:inline-block; margin-top:12px; padding:8px 16px; background:var(--primary); color:white; border-radius:6px; text-decoration:none; font-size:0.85rem; font-weight:600;">查看 Vlog →</a>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">懸崖咖啡廳</div>
+            <div class="card-subtitle">Cliff Cafe</div>
+          </div>
+          <div class="card-body">
+            <p>坐落於懸崖邊的咖啡廳，俯瞰芭堤雅灣景色。適合悠閒下午茶或日落時分，拍照打卡的好地點。</p>
+            <div style="margin-top:12px;">
+              <span class="tag tag-green">景觀</span> <span class="tag tag-blue">拍照</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <div style="font-size:0.85rem; color:var(--text-light);">1-2\u5c0f\u6642</div>
+            <a href="https://sansalife.tw/pattaya-one-day-trip/" target="_blank" style="display:inline-block; margin-top:12px; padding:8px 16px; background:var(--primary); color:white; border-radius:6px; text-decoration:none; font-size:0.85rem; font-weight:600;">查看推薦 →</a>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">海上漂浮咖啡廳釣魷魚</div>
+            <div class="card-subtitle">Floating Cafe & Squid Fishing</div>
+          </div>
+          <div class="card-body">
+            <p>獨特的海上體驗，白天享受咖啡，晚上可參加釣魷魚活動。適合想體驗不同於一般觀光的旅客。</p>
+            <div style="margin-top:12px;">
+              <span class="tag tag-purple">獨特</span> <span class="tag tag-green">釣魚</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <div style="font-size:0.85rem; color:var(--text-light);">2-4\u5c0f\u6642</div>
+            <a href="https://sansalife.tw/pattaya-one-day-trip/" target="_blank" style="display:inline-block; margin-top:12px; padding:8px 16px; background:var(--primary); color:white; border-radius:6px; text-decoration:none; font-size:0.85rem; font-weight:600;">查看 Vlog →</a>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">大象保護區</div>
+            <div class="card-subtitle">Elephant Sanctuary</div>
+          </div>
+          <div class="card-body">
+            <p>倫理的大象保護區，與大象互動、餵食、洗澡。體驗與大象親密接觸，同時支持動物保護。</p>
+            <div style="margin-top:12px;">
+              <span class="tag tag-green">動物</span> <span class="tag tag-blue">體驗</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <div style="font-size:0.85rem; color:var(--text-light);">4-5\u5c0f\u6642</div>
+            <a href="https://vocus.cc/article/68632deefd8978000118e745" target="_blank" style="display:inline-block; margin-top:12px; padding:8px 16px; background:var(--primary); color:white; border-radius:6px; text-decoration:none; font-size:0.85rem; font-weight:600;">查看攻略 →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:64px;">
+      <h3 style="font-size:1.4rem; font-weight:700; text-align:center; margin-bottom:32px; color:var(--dark);">🌙 夜生活與酒吧</h3>
+      <div class="grid-3 fade-in">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">步行街</div>
+            <div class="card-subtitle">Walking Street</div>
+          </div>
+          <div class="card-body">
+            <p>芭堤雅夜生活的核心，入夜後霓虹閃爍。酒吧、夜店、餐廳雲集，是男生旅行必去的地點。</p>
+            <div style="margin-top:12px;">
+              <span class="tag tag-purple">夜生活</span> <span class="tag tag-orange">酒吧</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <div style="font-size:0.85rem; color:var(--text-light);">晚上 / 全晚</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Soi Buakhao 酒吧街</div>
+            <div class="card-subtitle">Soi Buakhao</div>
+          </div>
+          <div class="card-body">
+            <p>步行街附近的熱門酒吧街，酒吧與餐廳密集。氛圍輕鬆，適合小酌與聊天，比步行街更親民。</p>
+            <div style="margin-top:12px;">
+              <span class="tag tag-purple">酒吧</span> <span class="tag tag-blue">聚餐</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <div style="font-size:0.85rem; color:var(--text-light);">晚上 / 全晚</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">阿克薩人妖秀</div>
+            <div class="card-subtitle">Alcazar Show</div>
+          </div>
+          <div class="card-body">
+            <p>另一場著名的人妖表演秀，舞蹈與服裝同樣華麗。與蒂芬妮秀各有特色，可選擇其中一場觀看。</p>
+            <div style="margin-top:12px;">
+              <span class="tag tag-purple">表演秀</span> <span class="tag tag-orange">夜生活</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <div style="font-size:0.85rem; color:var(--text-light);">晚上 / 1.5小時</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">中天夜市</div>
+            <div class="card-subtitle">Jomtien Night Market</div>
+          </div>
+          <div class="card-body">
+            <p>當地人聚集的夜市，美食攤位眾多，價格便宜。體驗道地泰國夜生活，品嚐各式街頭美食。</p>
+            <div style="margin-top:12px;">
+              <span class="tag tag-green">美食</span> <span class="tag tag-blue">夜市</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <div style="font-size:0.85rem; color:var(--text-light);">晚上 / 2-3小時</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 4: BEACHES -->
+<section id="beaches">
+  <div class="container">
+    <div class="section-header fade-in">
+      <div class="section-tag">海灘地圖</div>
+      <h2>芭堤雅海灘全覽</h2>
+      <p>從熱鬧的市中心到寧靜的軍事秘境，探索芭堤雅的所有海岸線</p>
+    </div>
+    <div id="beach-map" class="map-container fade-in"></div>
+  </div>
+</section>
+
+<footer>
+  <strong>無馬外出芭堤雅番</strong> · 2026 泰國之旅深度指南<br>
+  <span style="opacity:0.6; font-size:0.8rem; margin-top:8px; display:block;">資料來源：Airbnb · Booking.com · Cape Dara · Centara · Cross Hotels</span>
+</footer>
+
+<script>
+// ── SCROLL ANIMATIONS ──
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+// ── TAB FUNCTIONS ──
+function showAccom(id) {
+  document.querySelectorAll('.accom-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.accom-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('accom-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ── MAP DATA ──
+const areas = [
+  { name: '北芭堤雅 / 那克盧亞', lat: 12.965, lng: 100.885, desc: '清幽安靜，高級飯店與在地海鮮。' },
+  { name: '中芭堤雅', lat: 12.935, lng: 100.888, desc: '繁華中心，購物與交通樞紐。' },
+  { name: '步行街區域', lat: 12.925, lng: 100.873, desc: '夜生活核心，酒吧與娛樂。' },
+  { name: '帕塔姆納克山', lat: 12.915, lng: 100.860, desc: '優雅住宅區，景觀絕佳。' },
+  { name: '中天海灘', lat: 12.895, lng: 100.875, desc: '長沙灘，適合家庭與水上活動。' },
+  { name: '那中天 / 邦薩雷', lat: 12.820, lng: 100.910, desc: '最清幽，水質最佳的秘境。' }
+];
+
+const accoms = [
+  { name: 'p22 中天別墅', lat: 12.898, lng: 100.878, type: 'Airbnb', desc: '4房泳池別墅，高分推薦。' },
+  { name: 'Mövenpick 別墅', lat: 12.835, lng: 100.915, type: 'Airbnb', desc: '6房超大空間，2025全新。' },
+  { name: '中天豪華別墅', lat: 12.892, lng: 100.882, type: 'Airbnb', desc: '距海50m，送接機服務。' },
+  { name: 'Cape Dara Resort', lat: 12.955, lng: 100.884, type: 'Resort', desc: '私人海岬，全海景五星。' },
+  { name: 'Centara Grand Mirage', lat: 12.960, lng: 100.886, type: 'Resort', desc: '叢林水上樂園主題。' },
+  { name: 'Cross Pattaya Oceanphere', lat: 12.815, lng: 100.912, type: 'Resort', desc: '全別墅設計感度假村。' }
+];
+
+const beaches = [
+  { name: '翁阿瑪特海灘', lat: 12.962, lng: 100.883 },
+  { name: '芭堤雅海灘', lat: 12.940, lng: 100.885 },
+  { name: '東坦海灘', lat: 12.910, lng: 100.865 },
+  { name: '中天海灘', lat: 12.890, lng: 100.875 },
+  { name: '軍事海灘 (Sai Kaew)', lat: 12.745, lng: 100.845 },
+  { name: '格蘭島 (Koh Larn)', lat: 12.915, lng: 100.785 }
+];
+
+// ── INITIALIZE MAPS ──
+function initMap(id, data, color) {
+  const map = L.map(id).setView([12.92, 100.88], 11);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+  data.forEach(d => {
+    L.marker([d.lat, d.lng]).addTo(map)
+      .bindPopup(`<b>${d.name}</b><br>${d.desc || ''}`);
+  });
+}
+
+initMap('area-map', areas);
+initMap('accom-map', accoms);
+initMap('beach-map', beaches);
+
+</script>
+</body>
+</html>
